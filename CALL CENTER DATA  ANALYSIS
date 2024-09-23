@@ -1,0 +1,99 @@
+#Call center data
+#iportation of all libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+#data import
+df= pd.read_excel('/content/01 Call-Center-Dataset.xlsx')
+df.head(5)
+#method two to import data to python
+from google.colab import files
+upload = files.upload()
+df=pd.read_excel('01 Call-Center-Dataset.xlsx')
+df.head(5)
+#data type
+df.dtypes
+#row and columns on data
+df.shape
+df.info()
+#missing value
+df.isnull().sum()
+#drop missing values on column Speed of answer in seconds
+df=df.dropna(subset=['Speed of answer in seconds'])
+#check if missing values are dropped
+df.isnull().sum()
+#remove duplicates if any
+df=df.drop_duplicates()
+#confirmation duplicates removed
+df.isnull().sum()
+def convert_time(row):
+    '''Return average talk duration as seconds'''
+    # Check if the row is a float and return it directly if it is
+    if isinstance(row, float):
+        return row
+    # Otherwise, proceed with the original conversion
+    else:
+        return pd.Timedelta(hours=row.hour, minutes=row.minute, seconds=row.second).total_seconds() if pd.notnull(row) else None
+#apply total seconds function
+df['AvgTalkDuration'] = df.AvgTalkDuration.apply(lambda x: convert_time(x))
+df.head(5)
+#confirm calls picked not N was removed in missing values
+df['Answered (Y/N)'].value_counts()
+#show agents plus calls received and average satisfaction rating by agent
+for agent in df.Agent.unique():
+    print('{}: \n Calls:{}, Average rating: {}'.format(agent,df[df.Agent==agent].shape[0],df[df.Agent==agent]['Satisfaction rating'].mean()))
+#showing the average ratings in sorted way from highestest to lowest first create list
+# Create a list to store each agent's name, call count, and average rating
+agent_ratings = []
+
+# Loop through each unique agent and gather their statistics
+#use append() to allow add new elements to a list one at a time,
+for agent in df.Agent.unique():
+    call_count = df[df.Agent == agent].shape[0]
+    average_rating = df[df.Agent == agent]['Satisfaction rating'].mean()
+    agent_ratings.append((agent, call_count, average_rating))
+
+# Sort the list by average rating in descending order (highest to lowest)
+agent_ratings.sort(key=lambda x: x[2], reverse=True)
+
+# Display the sorted results
+#.2f means:'.2 'Display the number with two decimal places and f: Format the number as a floating-point number (i.e., a number with decimals)
+for agent, calls, avg_rating in agent_ratings:
+    print(f'{agent}: \n Calls: {calls}, Average rating: {avg_rating:.2f}')
+df_stats=df.describe()
+df_stats
+import scipy.stats as stats
+
+# Hypothesis testing to compare AvgTalkDuration on payment related and streaming
+
+payment_related = df[df['Topic'] == 'Payment related']['AvgTalkDuration'].dropna()
+streaming = df[df['Topic'] == 'Streaming']['AvgTalkDuration'].dropna()
+
+t_stat, p_val = stats.ttest_ind(payment_related, streaming)
+# Display the t-statistic and p-value
+print(f'T-test result: t-statistic = {t_stat}, p-value = {p_val}')
+print('Reject the null hypothesis at the 5% significance level as The p-value of 0.029 is less than the common significance threshold of 0.05. \nThere is a statistically significant difference in the average talk duration between the "Payment related" and "Streaming" call types.')
+df.groupby('Agent')['Satisfaction rating'].mean().plot.bar()
+plt.show()
+#use plotly for interactivenes of satisfaction rating of agents with topic
+import plotly.express as px
+fig=px.bar(df,x='Agent',y='Satisfaction rating',color='Topic',title='Average satisfaction ratings by agents')
+fig.show()
+#average satisfaction rating by topics
+df.groupby('Topic')['Satisfaction rating'].mean().plot.bar()
+plt.show()
+import plotly.express as px
+fig=px.bar(df,x='Topic',y='Satisfaction rating',color='Agent',title='Average satisfaction ratings by Topic')
+fig.show()
+
+#exporting data
+df_export = df[['Agent', 'Topic', 'Answered (Y/N)', 'AvgTalkDuration','Satisfaction rating']]
+df_export.to_csv('clean_call_center_data.csv', index=False)
+
+'https://colab.research.google.com/drive/1x-eoCime4B5z9PTBnWazQFVB7FbRmH5o?usp=sharing'--COLAB LINK
+
+
+
+
+
